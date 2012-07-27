@@ -21,11 +21,29 @@
 windows_package node['7-zip']['package_name'] do
   source node['7-zip']['url']
   checksum node['7-zip']['checksum']
-  options "INSTALLDIR=\"#{node['7-zip']['home']}\""
+  version "9.20.00.0"
+  options "/quiet INSTALLDIR=\"#{node['7-zip']['home']}\""
+  notifies :run, "windows_batch[associate 7zip]"
+  Chef::Log.info("Installing #{node['7-zip']['package_name']} #{node['7-zip']['package_name']} ")
   action :install
 end
+
 
 # update path
 windows_path node['7-zip']['home'] do
   action :add
+end
+
+cookbook_file "#{Chef::Config[:cookbook_path]}/7-zip/7z.reg" do
+    source "7z.reg"
+    mode "0644"
+    action :create_if_missing
+end
+
+windows_batch "associate 7zip" do
+  code <<-EOH
+for /d %%A in (7z,arj,bz2,bzip2,cab,cpio,deb,dmg,gz,gzip,hfs,iso,lha,lzh,lzma,rar,rpm,split,swm,tar,taz,tbz,tbz2,tgz,tpz,wim,xar,z,zip) do assoc .%%A=7-zip.%%A
+reg import #{Chef::Config[:cookbook_path]}/7-zip/7z.reg
+    EOH
+    action :nothing
 end
